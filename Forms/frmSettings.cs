@@ -67,6 +67,10 @@ namespace CloudFlareDDNS
             cloudflare_api_url_input.Text = Program.settingsManager.getSetting("APIUrl").ToString();
             UseInternalIP_input.Checked = Program.settingsManager.getSetting("UseInternalIP").ToBool();
             HideSRV_input.Checked = Program.settingsManager.getSetting("HideSRV").ToBool();
+
+			networkInterfaceSelect.Items.Add("Auto");
+			networkInterfaceSelect.SelectedIndex = 0;
+
         }//end frmSettings_Load()
 
         private void load_Zones(bool error =true)
