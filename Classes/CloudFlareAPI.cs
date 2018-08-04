@@ -298,22 +298,43 @@ namespace CloudFlareDDNS
             Put = 1,
         } //end enum
 
-        /// <summary>
-        /// Make a web request via GET or POST
-        /// </summary>
-        /// <param name="MethodType"></param>
-        /// <param name="szUrl"></param>
-        /// <param name="headers"></param>
-        /// <param name="data"></param>
-        /// <returns></returns>
-        private string webRequest(Method MethodType, string szUrl, WebHeaderCollection headers, string data = null)
+		/// <summary>
+		/// Make a web request via GET or POST
+		/// </summary>
+		/// <param name="MethodType"></param>
+		/// <param name="szUrl"></param>
+		/// <param name="headers"></param>
+		/// <param name="data"></param>
+		/// <returns></returns>
+		private string webRequest(Method MethodType, string szUrl, WebHeaderCollection headers, string data = null)
         {
             if (string.IsNullOrEmpty(szUrl))
                 return null;
 
-            WebRequest webrequest = WebRequest.Create(szUrl);
+            var webrequest = (HttpWebRequest)WebRequest.Create(szUrl);
+			ServicePointManager.MaxServicePointIdleTime = 100;
+			webrequest.ServicePoint.BindIPEndPointDelegate = (ServicePoint servicePoint, IPEndPoint remoteEndPoint, int retryCount) =>
+			{
+				if (retryCount > 0)
+				{
+					switch(remoteEndPoint.AddressFamily)
+					{
+						case AddressFamily.InterNetworkV6:
+							return new IPEndPoint(IPAddress.IPv6Any, 0);
+						default:
+							return new IPEndPoint(IPAddress.Any, 0);
+					}
+				}
 
-            if (MethodType == Method.Get)
+				// test-data
+				if (!IPAddress.TryParse(Program.settingsManager.getSetting("NetworkInterface").ToString(), out var iface))
+				{
+					iface = IPAddress.Any;
+				}
+				return new IPEndPoint(iface, 0);
+			};
+
+			if (MethodType == Method.Get)
             {
                 webrequest.ContentType = "application/json";
                 if (headers != null)

@@ -349,6 +349,7 @@ namespace CloudFlareDDNS
 			// 
 			// networkInterfaceSelect
 			// 
+			this.networkInterfaceSelect.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 			this.networkInterfaceSelect.FormattingEnabled = true;
 			this.networkInterfaceSelect.Location = new System.Drawing.Point(152, 225);
 			this.networkInterfaceSelect.Name = "networkInterfaceSelect";

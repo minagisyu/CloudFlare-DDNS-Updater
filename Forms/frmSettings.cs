@@ -24,6 +24,7 @@
 
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
@@ -47,53 +48,58 @@ namespace CloudFlareDDNS
             InitializeComponent();
         }//end frmSettings()
 
-        /// <summary>
-        /// Load the saved values on open
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void frmSettings_Load(object sender, EventArgs e)
-        {
-            if (string.IsNullOrEmpty(Program.settingsManager.getSetting("APIUrl").ToString()))
-            {
-                cloudflare_api_url_input.Text = "https://api.cloudflare.com/client/v4";
-                Program.settingsManager.setSetting("APIUrl", cloudflare_api_url_input.Text);
-            }
-
-            txtEmailAddress.Text = Program.settingsManager.getSetting("EmailAddress").ToString();
-            txtAPIKey.Text = Program.settingsManager.getSetting("APIKey").ToString();
-            txtFetchTime.Text = Program.settingsManager.getSetting("FetchTime").ToString();
-            cbEventLog.Checked = Program.settingsManager.getSetting("UseEventLog").ToBool();
-            IPV6UpdateURL.Text = Program.settingsManager.getSetting("IPV6UpdateURL").ToString();
-            IPV4UpdateURL.Text = Program.settingsManager.getSetting("IPV4UpdateURL").ToString();
-            StartMinimized.Checked = Program.settingsManager.getSetting("StartMinimized").ToBool();
-            cloudflare_api_url_input.Text = Program.settingsManager.getSetting("APIUrl").ToString();
-            UseInternalIP_input.Checked = Program.settingsManager.getSetting("UseInternalIP").ToBool();
-            HideSRV_input.Checked = Program.settingsManager.getSetting("HideSRV").ToBool();
-
-			networkInterfaceSelect.Items.Add("Auto");
-			networkInterfaceSelect.SelectedIndex = 0;
-			add_network_interfaces();
-
-        }//end frmSettings_Load()
-
-		private void add_network_interfaces()
+		/// <summary>
+		/// Load the saved values on open
+		/// </summary>
+		/// <param name="sender"></param>
+		/// <param name="e"></param>
+		private void frmSettings_Load(object sender, EventArgs e)
 		{
-			foreach (NetworkInterface adapter in
-				NetworkInterface.GetAllNetworkInterfaces()
+			if (string.IsNullOrEmpty(Program.settingsManager.getSetting("APIUrl").ToString()))
+			{
+				cloudflare_api_url_input.Text = "https://api.cloudflare.com/client/v4";
+				Program.settingsManager.setSetting("APIUrl", cloudflare_api_url_input.Text);
+			}
+
+			txtEmailAddress.Text = Program.settingsManager.getSetting("EmailAddress").ToString();
+			txtAPIKey.Text = Program.settingsManager.getSetting("APIKey").ToString();
+			txtFetchTime.Text = Program.settingsManager.getSetting("FetchTime").ToString();
+			cbEventLog.Checked = Program.settingsManager.getSetting("UseEventLog").ToBool();
+			IPV6UpdateURL.Text = Program.settingsManager.getSetting("IPV6UpdateURL").ToString();
+			IPV4UpdateURL.Text = Program.settingsManager.getSetting("IPV4UpdateURL").ToString();
+			StartMinimized.Checked = Program.settingsManager.getSetting("StartMinimized").ToBool();
+			cloudflare_api_url_input.Text = Program.settingsManager.getSetting("APIUrl").ToString();
+			UseInternalIP_input.Checked = Program.settingsManager.getSetting("UseInternalIP").ToBool();
+			HideSRV_input.Checked = Program.settingsManager.getSetting("HideSRV").ToBool();
+
+			// initialize "NetworkInterface" combobox
+			networkInterfaceSelect.Items.Add(new InterfaceAdapter("Auto", IPAddress.Any));
+			networkInterfaceSelect.SelectedIndex = 0;
+
+			if (!IPAddress.TryParse(Program.settingsManager.getSetting("NetworkInterface").ToString(), out var useInterfaceIP))
+			{
+				useInterfaceIP = IPAddress.Any;
+			}
+
+			NetworkInterface.GetAllNetworkInterfaces()
 				.Where(x => x.OperationalStatus == OperationalStatus.Up)
 				.Where(x => x.NetworkInterfaceType == NetworkInterfaceType.Ethernet || x.NetworkInterfaceType == NetworkInterfaceType.Wireless80211)
-				)
-			{
-				foreach (UnicastIPAddressInformation addr in
-					adapter.GetIPProperties().UnicastAddresses
-					.Where(x => x.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-					)
+				.Select(x => new InterfaceAdapter(x.Name,
+					x.GetIPProperties().UnicastAddresses
+						.Where(y => y.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+						.Select(y => y.Address)
+						.FirstOrDefault() ?? IPAddress.Any))
+				.ToList()
+				.ForEach(x =>
 				{
-					networkInterfaceSelect.Items.Add(new InterfaceAdapter() { Name = adapter.Name, Address = addr.Address });
-				}
-			}
-		}
+					networkInterfaceSelect.Items.Add(x);
+					if (x.Address.Equals(useInterfaceIP))
+					{
+						networkInterfaceSelect.SelectedIndex = networkInterfaceSelect.Items.Count - 1;
+					}
+				});
+
+        }//end frmSettings_Load()
 
 		private void load_Zones(bool error =true)
         {
@@ -186,6 +192,10 @@ namespace CloudFlareDDNS
             Program.settingsManager.setSetting("APIUrl", cloudflare_api_url_input.Text);
             Program.settingsManager.setSetting("UseInternalIP", UseInternalIP_input.Checked.ToString());
             Program.settingsManager.setSetting("HideSRV", HideSRV_input.Checked.ToString());
+			if (networkInterfaceSelect.SelectedItem is InterfaceAdapter iface)
+			{
+				Program.settingsManager.setSetting("NetworkInterface", iface.Address.ToString());
+			}
             Program.settingsManager.saveSettings();
         }//end btnApply_Click()
 

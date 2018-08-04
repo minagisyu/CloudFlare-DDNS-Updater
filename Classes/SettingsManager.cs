@@ -207,7 +207,8 @@ namespace CloudFlareDDNS
             m_Settings.Add(new Setting("SelectedZone", ""));
             m_Settings.Add(new Setting("UseInternalIP", false));
             m_Settings.Add(new Setting("HideSRV", false));
-            m_Settings.Add(new Setting("StartMinimized", false));
-        }//end setDefaults()
-    }//end class
+			m_Settings.Add(new Setting("StartMinimized", false));
+			m_Settings.Add(new Setting("NetworkInterface", ""));
+		}//end setDefaults()
+	}//end class
 }//end namespace
