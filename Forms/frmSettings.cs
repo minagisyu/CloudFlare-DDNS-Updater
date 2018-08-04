@@ -23,9 +23,12 @@
  */
 
 using System;
+using System.Linq;
+using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using CloudFlareDDNS.Classes;
 using CloudFlareDDNS.Classes.JsonObjects.Cloudflare;
 
 namespace CloudFlareDDNS
@@ -70,10 +73,29 @@ namespace CloudFlareDDNS
 
 			networkInterfaceSelect.Items.Add("Auto");
 			networkInterfaceSelect.SelectedIndex = 0;
+			add_network_interfaces();
 
         }//end frmSettings_Load()
 
-        private void load_Zones(bool error =true)
+		private void add_network_interfaces()
+		{
+			foreach (NetworkInterface adapter in
+				NetworkInterface.GetAllNetworkInterfaces()
+				.Where(x => x.OperationalStatus == OperationalStatus.Up)
+				.Where(x => x.NetworkInterfaceType == NetworkInterfaceType.Ethernet || x.NetworkInterfaceType == NetworkInterfaceType.Wireless80211)
+				)
+			{
+				foreach (UnicastIPAddressInformation addr in
+					adapter.GetIPProperties().UnicastAddresses
+					.Where(x => x.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+					)
+				{
+					networkInterfaceSelect.Items.Add(new InterfaceAdapter() { Name = adapter.Name, Address = addr.Address });
+				}
+			}
+		}
+
+		private void load_Zones(bool error =true)
         {
             try
             {

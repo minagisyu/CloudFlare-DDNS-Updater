@@ -93,6 +93,7 @@
   <ItemGroup>
     <Compile Include="Classes\CloudFlareAPI.cs" />
     <Compile Include="Classes\DNSStructs.cs" />
+    <Compile Include="Classes\InterfaceAdapter.cs" />
     <Compile Include="Classes\JsonObjects\Cloudflare\BasicResponse.cs" />
     <Compile Include="Classes\JsonObjects\Cloudflare\GetDnsRecordsResponse.cs" />
     <Compile Include="Classes\JsonObjects\Cloudflare\GetZoneListResponse.cs" />
